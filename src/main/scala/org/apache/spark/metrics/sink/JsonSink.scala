@@ -1,22 +1,63 @@
 package org.apache.spark.metrics.sink
 
-import com.codahale.metrics.MetricRegistry
+import com.codahale.metrics.{JsonReporter, MetricFilter, MetricRegistry}
 import org.apache.spark.SecurityManager
+import org.apache.spark.metrics.MetricsSystem
+import org.slf4j.{Logger, LoggerFactory}
 
-import java.util.Properties
+import java.util.concurrent.TimeUnit
+import java.util.{Locale, Properties}
 
 private[spark] class JsonSink(val property: Properties,
                               val registry: MetricRegistry,
                               val securityManager: SecurityManager) extends Sink {
+
+  val log: Logger = LoggerFactory.getLogger(getClass)
+
+  val KEY_PERIOD = "period"
+  val KEY_UNIT = "unit"
+
+  val DEFAULT_PERIOD = 10
+  val DEFAULT_UNIT = "SECONDS"
+
+  val pollPeriod: Int = Option(property.getProperty(KEY_PERIOD)) match {
+    case Some(s) => s.toInt
+    case None => DEFAULT_PERIOD
+  }
+
+  val pollUnit: TimeUnit = Option(property.getProperty(KEY_UNIT)) match {
+    case Some(s) => TimeUnit.valueOf(s.toUpperCase(Locale.ROOT))
+    case None => TimeUnit.valueOf(DEFAULT_UNIT)
+  }
+
+  val jobId: String = {
+    val name = registry.getNames.first()
+    name.substring(0, name.indexOf("."))
+  }
+
+  MetricsSystem.checkMinimalPollingPeriod(pollUnit, pollPeriod)
+
+  val reporter: JsonReporter = JsonReporter.forRegistry()
+    .registry(registry)
+    .jobId(jobId)
+    .name("json-sink")
+    .filter(MetricFilter.ALL)
+    .durationUnit(TimeUnit.SECONDS)
+    .rateUnit(TimeUnit.MILLISECONDS)
+    .build()
+
   def start(): Unit = {
-    println("START")
+    log.debug("JsonReporter Start")
+    reporter.start(pollPeriod, pollUnit)
   }
 
   def stop(): Unit = {
-    println("STOP")
+    log.debug("JsonReporter Stop")
+    reporter.stop()
   }
 
   def report(): Unit = {
-    println("REPORT")
+    log.debug("JsonReporter Reporter")
+    reporter.report()
   }
 }
