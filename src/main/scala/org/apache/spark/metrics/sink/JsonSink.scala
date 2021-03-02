@@ -12,10 +12,7 @@ private[spark] abstract class JsonSink(val property: Properties,
                                        val registry: MetricRegistry,
                                        val securityManager: SecurityManager) extends Sink {
 
-  lazy val reporter: JsonReporter = {
-    // TO BE IMPLEMENT by concrete class
-    ???
-  }
+  lazy val reporter: JsonReporter = ??? // TO BE IMPLEMENT by concrete class
   val log: Logger = LoggerFactory.getLogger(getClass)
   val KEY_PERIOD = "period"
   val KEY_UNIT = "unit"
