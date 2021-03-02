@@ -10,7 +10,9 @@ object ExampleApp {
   def main(args: Array[String]): Unit = {
     val spark: SparkSession = SparkSession.builder().appName("Random Example")
       .master("local[4]")
-      .config("spark.metrics.conf.*.sink.json.class", "org.apache.spark.metrics.sink.JsonSink")
+      .config("spark.metrics.conf.*.sink.restapi.class", "org.apache.spark.metrics.sink.RestApiSink")
+      .config("spark.metrics.conf.*.sink.restapi.apiUrl", "http://localhost:8080/spark/")
+//      .config("spark.metrics.conf.*.sink.json.class", "org.apache.spark.metrics.sink.JsonSink")
       .getOrCreate()
 
     import spark.implicits._

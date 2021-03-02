@@ -17,7 +17,7 @@ import com.google.common.collect.ImmutableList;
 
 import lombok.Builder;
 
-public class JsonReporter extends ScheduledReporter {
+public abstract class JsonReporter extends ScheduledReporter {
   private static final Logger log = org.slf4j.LoggerFactory.getLogger(JsonReporter.class);
 
   private final ObjectMapper objectMapper;
@@ -35,7 +35,7 @@ public class JsonReporter extends ScheduledReporter {
    * @param rateUnit a unit of time
    * @param durationUnit a unit of time
    */
-  @Builder(builderMethodName = "forRegistry")
+//  @Builder(builderMethodName = "forRegistry")
   protected JsonReporter(final MetricRegistry registry, final String name,
       final MetricFilter filter, final TimeUnit rateUnit, final TimeUnit durationUnit,
       @Nullable final Clock clock, final String jobId) {
@@ -45,26 +45,26 @@ public class JsonReporter extends ScheduledReporter {
     this.objectMapper = buildObjectMapper();
   }
 
-  /**
-   * Called periodically by the polling thread. Subclasses should report all the given metrics.
-   *
-   * @param gauges all of the gauges in the registry
-   * @param counters all of the counters in the registry
-   * @param histograms all of the histograms in the registry
-   * @param meters all of the meters in the registry
-   * @param timers all of the timers in the registry
-   */
-  @Override
-  public void report(SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters,
-      SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters,
-      SortedMap<String, Timer> timers) {
-    try {
-      String jsonAsString = reportAsJson(gauges, counters, histograms, meters, timers);
-      log.debug("Report as json: {}.", jsonAsString);
-    } catch (JsonProcessingException e) {
-      log.error("Error during report json sink");
-    }
-  }
+//  /**
+//   * Called periodically by the polling thread. Subclasses should report all the given metrics.
+//   *
+//   * @param gauges all of the gauges in the registry
+//   * @param counters all of the counters in the registry
+//   * @param histograms all of the histograms in the registry
+//   * @param meters all of the meters in the registry
+//   * @param timers all of the timers in the registry
+//   */
+//  @Override
+//  public void report(SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters,
+//      SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters,
+//      SortedMap<String, Timer> timers) {
+//    try {
+//      String jsonAsString = reportAsJson(gauges, counters, histograms, meters, timers);
+//      log.debug("Report as json: {}.", jsonAsString);
+//    } catch (JsonProcessingException e) {
+//      log.error("Error during report json sink");
+//    }
+//  }
 
   protected String reportAsJson(SortedMap<String, Gauge> gauges,
       SortedMap<String, Counter> counters, SortedMap<String, Histogram> histograms,
