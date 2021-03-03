@@ -6,22 +6,19 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
 
+import io.dma.client.StreamingClient;
+import io.dma.client.payload.MetricsPayload;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class RestApiReporter extends JsonReporter {
-  @Nullable
-  private final HttpClient httpClient;
+public class RestApiReporter extends PayloadReporter
+{
 
-  private final String apiUrl;
+  private final StreamingClient<MetricsPayload> streamingClient;
 
   /**
    * Creates a new {@link ScheduledReporter} instance.
@@ -37,10 +34,9 @@ public class RestApiReporter extends JsonReporter {
   @Builder(builderMethodName = "forRegistry")
   protected RestApiReporter(MetricRegistry registry, String name, MetricFilter filter,
       TimeUnit rateUnit, TimeUnit durationUnit, @Nullable Clock clock, String jobId,
-      @Nullable HttpClient httpClient, String apiUrl) {
+      StreamingClient<MetricsPayload> streamingClient) {
     super(registry, name, filter, rateUnit, durationUnit, clock, jobId);
-    this.httpClient = getOrCreateDefaultHttpClient(httpClient);
-    this.apiUrl = apiUrl;
+    this.streamingClient = streamingClient;
   }
 
   /**
@@ -58,23 +54,10 @@ public class RestApiReporter extends JsonReporter {
       SortedMap<String, Timer> timers) {
 
     try {
-      String jsonAsString = reportAsJson(gauges, counters, histograms, meters, timers);
-      StringEntity stringEntity = new StringEntity(jsonAsString);
-      HttpPost httpPost = new HttpPost(apiUrl);
-      httpPost.setEntity(stringEntity);
-
-      HttpResponse response = httpClient.execute(httpPost);
-
-      int statusCode = response.getStatusLine().getStatusCode();
-      EntityUtils.consume(response.getEntity());
-
-      if (statusCode != 200) {
-        throw new RuntimeException(
-            "Problem during execute request api url with status error: " + statusCode);
-      }
-
+      MetricsPayload metricsDto = reportAsDto(gauges, counters, histograms, meters, timers);
+      streamingClient.publishToQueue(metricsDto);
     } catch (IOException e) {
-      e.printStackTrace();
+      log.error("Error on report sink metrics", e);
     }
   }
 

@@ -9,17 +9,13 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 
-public abstract class JsonReporter extends ScheduledReporter {
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(JsonReporter.class);
+import io.dma.client.payload.MetricsPayload;
 
-  private final ObjectMapper objectMapper;
-
+public abstract class PayloadReporter extends ScheduledReporter {
   private final Clock clock;
 
   private final String jobId;
@@ -33,16 +29,15 @@ public abstract class JsonReporter extends ScheduledReporter {
    * @param rateUnit a unit of time
    * @param durationUnit a unit of time
    */
-  protected JsonReporter(final MetricRegistry registry, final String name,
+  protected PayloadReporter(final MetricRegistry registry, final String name,
       final MetricFilter filter, final TimeUnit rateUnit, final TimeUnit durationUnit,
       @Nullable final Clock clock, final String jobId) {
     super(registry, name, filter, rateUnit, durationUnit);
     this.clock = getOrCreateDefaultClock(clock);
     this.jobId = jobId;
-    this.objectMapper = buildObjectMapper();
   }
 
-  protected String reportAsJson(SortedMap<String, Gauge> gauges,
+  protected MetricsPayload reportAsDto(SortedMap<String, Gauge> gauges,
       SortedMap<String, Counter> counters, SortedMap<String, Histogram> histograms,
       SortedMap<String, Meter> meters, SortedMap<String, Timer> timers)
       throws JsonProcessingException {
@@ -62,10 +57,16 @@ public abstract class JsonReporter extends ScheduledReporter {
     SortedMap<String, Meter> _meters = truncateKey(meters, offset);
     SortedMap<String, Timer> _timers = truncateKey(timers, offset);
 
-    JsonSinkDto dto = JsonSinkDto.builder().jobId(jobId).instance(instance).generated_at(timestamp)
-        .gauges(_gauges).counters(_counters).histograms(_histograms).meters(_meters).timers(_timers)
+    return MetricsPayload.builder()
+        .jobId(jobId)
+        .instance(instance)
+        .generated_at(timestamp)
+        .gauges(_gauges)
+        .counters(_counters)
+        .histograms(_histograms)
+        .meters(_meters)
+        .timers(_timers)
         .build();
-    return objectMapper.writeValueAsString(dto);
 
   }
 
@@ -74,9 +75,7 @@ public abstract class JsonReporter extends ScheduledReporter {
 
     SortedMap<String, T> newMap = new TreeMap<>();
 
-    metrics.forEach((key, value) -> {
-      newMap.put(key.substring(offset), value);
-    });
+    metrics.forEach((key, value) -> newMap.put(key.substring(offset), value));
     return newMap;
   }
 
@@ -97,9 +96,5 @@ public abstract class JsonReporter extends ScheduledReporter {
 
   private Clock getOrCreateDefaultClock(@Nullable Clock clock) {
     return clock != null ? clock : Clock.defaultClock();
-  }
-
-  private ObjectMapper buildObjectMapper() {
-    return new ObjectMapper();
   }
 }

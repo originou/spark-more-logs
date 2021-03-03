@@ -1,17 +1,25 @@
-package com.codahale.metrics;
+package io.dma.client.payload;
 
 import java.util.SortedMap;
+
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.PayloadReporter;
+import com.codahale.metrics.Timer;
 
 import lombok.Builder;
 import lombok.Data;
 
 /**
- * DTO of metrics reported by {@link JsonReporter} to be serialize as json string.
+ * DTO of metrics reported by {@link PayloadReporter} to be serialize as json string.
  * 
  */
 @Data
 @Builder
-public class JsonSinkDto {
+public class MetricsPayload
+{
   /**
    * Job Spark ID
    */
